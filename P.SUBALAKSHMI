@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Travel Booking System</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://js.stripe.com/v3/"></script>
+
+
+</head>
+<body>
+
+ <div class="container">
+    <h2>🌍 Travel Booking</h2>
+
+    <label>Destination:</label>
+    <select id="destination">
+      <option value="500">Paris - $500</option>
+      <option value="700">New York - $700</option>
+      <option value="900">Tokyo - $900</option>
+      <option value="600">Bali - $600</option>
+    </select>
+
+    <label>Travelers:</label>
+    <input type="number" id="travelers" min="1" value="1" />
+
+    <button id="calc">Calculate Total</button>
+    <p id="total">Total: $0</p>
+
+    <hr />
+
+    <form id="payment-form">
+      <div id="payment-element"></div>
+      <button id="submit">Pay Now</button>
+      <div id="payment-message"></div>
+    </form>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+import express from "express";
+import path from "path";
+import dotenv from "dotenv";
+import Stripe from "stripe";
+import bodyParser from "body-parser";
+
+dotenv.config();
+
+const app = express();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const __dirname = path.resolve();
+
+// Serve static files
+app.use(express.static(path.join(__dirname, "public")));
+app.use(bodyParser.json());
+
+// Create payment intent (backend API)
+app.post("/create-payment-intent", async (req, res) => {
+  const { amount } = req.body;
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: "usd",
+      automatic_payment_methods: { enabled: true },
+    });
+    res.send({ clientSecret: paymentIntent.client_secret });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: err.message });
+  }
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () =>
+  console.log(`✅ Server running on http://localhost:${PORT}`)
+);
+
+
+
